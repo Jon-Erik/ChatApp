@@ -1,0 +1,24 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],
+	"settings":
+	{
+		"ensure_newline_at_eof_on_save": true,
+		"js_prettier":
+		{
+			"debug": true,
+			//"prettier_options": {"parser": "html"},
+			"auto_format_on_save": true,
+			"auto_format_on_save_requires_prettier_config": true,
+			//"allow_inline_formatting": true,
+			"custom_file_extensions":
+			["tag"],
+			"disable_tab_width_auto_detection": true,
+			"prettier_cli_path": "${project_path}/client/node_modules/.bin/prettier"
+		}
+	}
+}

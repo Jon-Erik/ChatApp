@@ -1,0 +1,29 @@
+{
+  "name": "chatapp",
+  "version": "1.0.0",
+  "description": "Riot.js and WS-Wrapper Chat Application",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "prod": "set NODE_ENV=production && node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jon-Erik/ChatApp.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jon-Erik/ChatApp/issues"
+  },
+  "homepage": "https://github.com/Jon-Erik/ChatApp#readme",
+  "devDependencies": {
+    "prettier": "^1.16.4"
+  },
+  "dependencies": {
+    "express": "^4.16.4",
+    "ws": "^6.1.4",
+    "ws-server-wrapper": "^1.4.1"
+  }
+}
