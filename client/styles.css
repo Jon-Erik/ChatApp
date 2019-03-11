@@ -5,3 +5,7 @@
 .disconnected {
 	color: red;
 }
+
+.delete {
+	cursor: pointer;
+}

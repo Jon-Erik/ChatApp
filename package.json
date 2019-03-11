@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "express": "^4.16.4",
+    "moment": "^2.24.0",
     "ws": "^6.1.4",
     "ws-server-wrapper": "^1.4.1"
   }

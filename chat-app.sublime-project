@@ -16,7 +16,7 @@
 			"auto_format_on_save_requires_prettier_config": true,
 			//"allow_inline_formatting": true,
 			"custom_file_extensions":
-			["tag"],
+			[],
 			"disable_tab_width_auto_detection": true,
 			"prettier_cli_path": "${project_path}/client/node_modules/.bin/prettier"
 		}
