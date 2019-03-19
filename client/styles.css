@@ -6,6 +6,10 @@
 	color: red;
 }
 
-.delete {
+.active-btn {
 	cursor: pointer;
+}
+
+.disabled-btn {
+	color: slategray;
 }

@@ -24,7 +24,7 @@
 	<div if="{!connectedUsername}">
 		<form onsubmit="{setUsername}">
 			<input
-				onchange="{editNewUsername}"
+				onkeyup="{editNewUsername}"
 				placeholder="Username"
 				value="{newUsername}"
 			/>
@@ -49,12 +49,31 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr each="{msg in messages}">
-				<td class="delete" title="Delete message">
-					<i onClick="{deleteMsg}" class="fas fa-trash-alt"></i>
+			<tr each="{msg in messages}">				
+				<td if="{connectedUsername === msg.user}" class="active-btn" >
+					<i onClick="{deleteMsg}" title="Delete message" class="fas fa-trash-alt"></i>
+					<i onClick="{editMsg}" title="Edit message" value="{msg.id}" class="fas fa-edit"></i>
 				</td>
+
+				<td if="{connectedUsername !== msg.user}" class="disabled-btn">
+					<i class="fas fa-trash-alt"></i>
+					<i class="fas fa-edit"></i>
+				</td>
+
 				<td>{msg.user}</td>
-				<td>{msg.text}</td>
+
+				<td if="{editedMsgId !== msg.id}">{msg.text}</td>
+				
+				<td if="{editedMsgId === msg.id}">
+					<span title="Discard changes" value="0" class="active-btn" onClick="{editMsg}">
+						<i class="fas fa-ban"></i>
+					</span>
+					<span title="Save changes" value="{msg.id}" class="active-btn" onClick="{saveChanges}">
+						<i class="fas fa-save"></i>
+					</span>
+					<input value="{editedMsgText}" onChange="{updateEditedMsg}"/>
+				</td>
+
 				<td>{msg.timeStamp}</td>
 			</tr>
 		</tbody>
@@ -62,7 +81,7 @@
 
 	<form onsubmit="{sendMessage}">
 		<input
-			onchange="{editNewText}"
+			onkeyup="{editNewText}"
 			value="{newText}"
 			placeholder="New message"
 		/>
@@ -78,30 +97,45 @@
 		this.connectedUsername = "";
 		this.newText = "";
 		this.connected = opts.socket.isConnected;
+		this.editedMsgId = 0;
+		this.editedMsgText = "";
+		let {socket} = opts;
+		//render function?
 
 		/*--------DOM manipulation functions---------*/
 		deleteMessage(msg) {
-			this.messages.splice(msg.index, 1)
-			this.update()
+			this.messages.splice(msg.index, 1);
+			this.update();
 		}
 
 		editNewUsername(event) {
-			this.newUsername = event.target.value
+			this.newUsername = event.target.value;
+			this.update();
 		}
 
 		setUsername(event) {
-			this.connectedUsername = this.newUsername
-			this.newUsername = ""
+			this.connectedUsername = this.newUsername;
+			this.newUsername = "";
 			this.updateUsers("add");
 		}
 
+
+		editMsg(event) {
+			this.editedMsgId = event.target.value;
+			this.editedMsgText = event.item.msg.text;
+		}
+
+		updateEditedMsg(event) {
+			this.editedMsgText = event.target.value
+		}
+
 		editNewText(event) {
-			this.newText = event.target.value
+			this.newText = event.target.value;
 			this.update()
 		}
 
 		receiveMessage(msg) {
-			this.messages.push(msg)
+			this.messages.push(msg);
 			this.update()
 		}
 
@@ -110,8 +144,18 @@
 			this.update();
 		}
 
+		updateMsg(newMsg) {
+			this.messages.some((oldMsg, index) => {
+				if (newMsg.id === oldMsg.id) {
+					this.messages[index] = newMsg
+					return true;
+				}
+			})
+			this.update();
+		}
+
 		resetUsername() {
-			this.updateUsers("delete")
+			this.updateUsers("delete");
 			this.connectedUsername = "";
 		}
 
@@ -122,13 +166,29 @@
 
 		/*---functions with routes sending data to web socket server---*/
 
+		saveChanges(event) {
+			//takes the username, message id, and edited text of a message and gives it a new timestamp
+			let msg = {
+				user: this.connectedUsername,
+				text: this.editedMsgText,
+				id: this.editedMsgId,
+				timeStamp: moment().format("YYYY-MM-DD hh:mm:ss A")
+			}
+
+			//clear edited message info
+			this.editedMsgText = "";
+			this.editedMsgId = 0;
+
+			socket.emit("editMsg", msg)
+		}
+
 		deleteMsg(event) {
 			//riot js on click events can get the item of an array rendered with repeating html elements
-			let msg = event.item.msg
-			let index = this.messages.indexOf(msg)
-			msg.index = index
+			let msg = event.item.msg;
+			let index = this.messages.indexOf(msg);
+			msg.index = index;
 			//send a message to the web socket server on the "deleteMsg" route with the message to be deleted
-			opts.socket.emit("deleteMsg", msg)
+			socket.emit("deleteMsg", msg);
 		}
 
 		sendMessage(e) {
@@ -141,7 +201,13 @@
 					timeStamp: moment().format("YYYY-MM-DD hh:mm:ss A")
 				}
 				this.newText =  "";
-				opts.socket.emit("chatMsg", msg);
+				socket.emit("chatMsg", msg);
+
+				//socket.request requests specific data from server and returns a promise
+				socket.request("requestAPITest", 6000)
+					.then(function(response) {
+						console.log(response)
+					})
 			}
 		}
 
@@ -152,31 +218,34 @@
 				user: this.connectedUsername,
 				method: method
 			}
-			opts.socket.emit("updateUsers", userObj)
+			socket.emit("updateUsers", userObj)
 		}
 
 		/*---web socket listeners---------*/
 
 		//on connection and reconnection to web socket server, update whether the application is connected to display in the DOM
-		opts.socket.on("disconnect", () => {
-			this.update({connected: opts.socket.isConnected})
+		socket.on("disconnect", () => {
+			this.update({connected: socket.isConnected})
 			this.users = [];
 		})
 
-		opts.socket.on("open", () => {
-			this.update({connected: opts.socket.isConnected});
+		socket.on("open", () => {
+			this.update({connected: socket.isConnected});
 		});
 
 		//if a msg is received on the channel "chatMsg", call the receiveMessage function and add it to messages array
-		opts.socket.on("chatMsg", this.receiveMessage)
+		socket.on("chatMsg", this.receiveMessage)
 		
 		//if a msg is received on the channel deleteMessage, call the deleteMessage function and remove it from the messages array
-		opts.socket.on("deleteMsg", this.deleteMessage)
+		socket.on("deleteMsg", this.deleteMessage)
 
 		//when the web socket server connects, it sends the current messages on the server to the client on the previousMsgs route. When the client receives the messages on this channel, it calls the setPreviousMsgs function to reset the messages array
-		opts.socket.on("previousMsgs", this.setPreviousMsgs)
+		socket.on("previousMsgs", this.setPreviousMsgs)
+
+		//receives a message that has been edited and calls updateMsg function to update the messages in memory on client
+		socket.on("updatedMsg", this.updateMsg)
 
 		//receives array of names of users connected to be displayed
-		opts.socket.on("users", this.updateUsersArray)
+		socket.on("users", this.updateUsersArray)
 	</script>
 </app>
